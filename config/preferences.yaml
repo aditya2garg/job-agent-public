@@ -1,0 +1,133 @@
+# What you want. Everything the scorer needs to judge "is this job for me?" lives here.
+
+resume_path: uploads/resume.pdf
+
+locations:
+  # Order matters only for display. Any of these is a full-marks location.
+  preferred: [bay_area, austin, remote_us]
+  # Score for jobs elsewhere in the US that are on-site / hybrid (relocation needed).
+  us_other_score: 25
+  unknown_score: 40
+
+compensation:
+  # Total compensation, USD / year.
+  preferred_min: 220000      # >= this scores 100
+  floor: 170000              # at/below the floor-ish line score drops fast
+  hard_floor: 120000         # score reaches 0 here
+  unknown_score: 50          # postings with no pay info are neutral, and flagged "verify"
+  # Postings mostly list base pay. If the posting mentions equity/RSUs/bonus, assume this
+  # multiplier to approximate total comp. Set to 1.0 to score on base pay only.
+  equity_multiplier: 1.10
+
+roles:
+  # tier: preferred | adjacent | longshot. `score` is the base role-fit (0-100).
+  # Long-shot / adjacent roles are boosted (or capped) by what the JD actually asks for.
+  - name: Agentic AI Engineer
+    tier: preferred
+    score: 98
+    pattern: 'agentic|\bagents?\b.*\b(engineer|developer|architect)\b|\b(engineer|developer|architect)\b.*\bagents?\b'
+  - name: AI Engineer
+    tier: preferred
+    score: 94
+    pattern: '\b(ai|a\.i\.|llm|genai|gen ai|generative ai|applied ai|ai/ml|ml/ai)\b.*\b(engineer|developer|architect|member of technical staff)\b|\b(engineer|developer)\b.*\b(ai|llm|genai|generative ai)\b'
+  - name: Analytics Engineer
+    tier: preferred
+    score: 80
+    ai_boost: 14           # up to +14 when the JD is AI/LLM-heavy ("Analytics Engineer (AI)")
+    pattern: 'analytics engineer|analytics engineering'
+  - name: Forward Deployed AI Engineer
+    tier: adjacent
+    score: 76
+    ai_boost: 12
+    pattern: 'forward[- ]deployed|solutions? engineer.*\b(ai|llm)\b|\b(ai|llm)\b.*solutions? engineer|applied engineer'
+  - name: ML Engineer
+    tier: adjacent
+    score: 66
+    ai_boost: 12
+    pattern: 'machine learning engineer|\bml engineer\b|\bmlops\b|ml platform|ai platform|machine learning platform'
+  - name: Data Scientist
+    tier: adjacent
+    score: 50
+    ai_boost: 15
+    pattern: 'data scientist|applied scientist'
+  - name: Research Engineer
+    tier: adjacent
+    score: 48
+    ai_boost: 8
+    pattern: 'research engineer'
+  - name: Data Engineer
+    tier: longshot
+    score: 46
+    focus_boost: 38        # up to +38 based on how data/AI-heavy the JD skills really are
+    max_score: 78
+    pattern: 'data engineer|data platform engineer|analytics platform|data infrastructure|etl developer'
+  - name: Software Engineer
+    tier: longshot
+    score: 38
+    focus_boost: 40
+    max_score: 74
+    pattern: 'software engineer|software developer|backend engineer|back-end engineer|platform engineer|full[- ]?stack|member of technical staff|founding engineer|\bswe\b|python developer|python engineer'
+
+# Titles containing any of these are dropped before scoring.
+exclude_title_patterns:
+  - '\bsales\b|account (executive|manager)|business development|recruit|talent|marketing|\bseo\b|\bcontent\b'
+  - 'legal|counsel|attorney|paralegal|compliance (officer|analyst)|finance (manager|analyst|associate)|accountant|accounting|payroll|\btax\b'
+  - 'designer|\bdesign\b|ux researcher|copywriter|\bwriter\b|\beditor\b'
+  - 'customer (success|support|experience)|support (engineer|specialist)|technical support|help ?desk|\bit (support|admin)'
+  - 'hardware|mechanical|electrical|firmware|\bfpga\b|\basic\b|silicon|manufactur|supply chain|operations (manager|associate)'
+  - '\bintern\b|internship|apprentice|\bco-?op\b|new grad|university'
+  - 'product manager|program manager|project manager|technical program|\bTPM\b|chief of staff|partnerships?\b'
+  - 'security (engineer|analyst|researcher)|penetration|\bsoc analyst|trust (and|&) safety|\bpolicy\b'
+  - 'research scientist|research fellow|\bphd\b'
+  - 'director|\bvp\b|vice president|head of|general manager|\bcto\b|\bciso\b'
+  - 'sales engineer|presales|pre-sales'
+  - '\bios\b|android|mobile (engineer|developer)|\bgames?\b|graphics|embedded|compiler|kernel|\bcuda\b'
+  - 'global affairs|fp&a|public policy|government affairs|network(ing)? (operations|engineer)|data ?cent(er|re)|facilities|\bgpu (kernel|performance)'
+  - 'solutions? (engineer|architect)(?!.*(forward|deploy))|customer engineer|technical account|demo engineer|sales'
+  - 'blockchain|solidity|smart contract|crypto (engineer|protocol)'
+
+# Titles that still pass the filter but are probably not what you want. Applied to the role score.
+soft_penalties:
+  - {pattern: 'gtm|go-to-market', penalty: 12, label: 'GTM / go-to-market focused'}
+  - {pattern: 'security|red team|trust', penalty: 18, label: 'Security-domain role'}
+  - {pattern: 'applied ai architect|ai architect|customer|field|consult', penalty: 15, label: 'Customer-facing / consulting flavor'}
+  - {pattern: 'infrastructure|infra\b|systems? engineer|\bsre\b|reliability|devops|performance', penalty: 14, label: 'Infra-heavy role'}
+  - {pattern: 'support|operations|\bops\b', penalty: 14, label: 'Operations / support flavor'}
+
+seniority:
+  # Title keywords -> level fit (0-100) for a mid-to-senior candidate.
+  title_scores:
+    - {pattern: 'principal|distinguished|fellow', score: 55}
+    - {pattern: 'staff', score: 74}
+    - {pattern: 'senior|\bsr\.?\b|\biii\b|\bl5\b', score: 100}
+    - {pattern: 'lead\b', score: 85}
+    - {pattern: 'manager|\bmgr\b', score: 25}
+    - {pattern: 'junior|\bjr\.?\b|associate|entry|early career|\bi\b$|\bl3\b', score: 30}
+    - {pattern: '\bii\b|\bl4\b', score: 85}
+  default_score: 90
+
+weights:
+  role: 0.22
+  skills: 0.28
+  semantic: 0.07
+  seniority: 0.10
+  compensation: 0.18
+  location: 0.15
+
+verdicts:
+  strong: 84    # "Apply now"
+  good: 74      # "Apply"
+  stretch: 62   # "Stretch / selective"
+
+# Pull-through filters applied during scrape (cheap, before any scoring).
+scrape:
+  max_age_days: 90
+  require_us_eligible: true
+
+# LLM deep-analysis (optional). Needs ANTHROPIC_API_KEY or OPENAI_API_KEY in env.
+llm:
+  provider: auto            # auto | anthropic | openai
+  anthropic_model: claude-sonnet-4-5
+  openai_model: gpt-4.1
+  top_n: 25                 # analyze the best N heuristic matches
+  blend: 0.40               # final = (1-blend)*heuristic + blend*llm

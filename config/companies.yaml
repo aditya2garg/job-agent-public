@@ -1,0 +1,161 @@
+# Company career boards to scan. `ats` is one of greenhouse | lever | ashby, `token` is the slug in the
+# board URL (boards.greenhouse.io/<token>, jobs.lever.co/<token>, jobs.ashbyhq.com/<token>).
+# Run `jobhunt check-companies` to verify tokens and see how many open roles each board has.
+# Add your own targets freely -- this list is a starting point biased toward AI-forward employers
+# that hire in the SF Bay Area, Austin, or remote-in-US.
+
+boards:
+  # --- Frontier labs & AI-native ----------------------------------------
+  - {ats: greenhouse, token: anthropic, name: Anthropic}
+  - {ats: ashby, token: openai, name: OpenAI}
+  - {ats: ashby, token: cohere, name: Cohere}
+  - {ats: greenhouse, token: scaleai, name: Scale AI}
+  - {ats: ashby, token: sierra, name: Sierra}
+  - {ats: ashby, token: decagon, name: Decagon}
+  - {ats: ashby, token: harvey, name: Harvey}
+  - {ats: greenhouse, token: gleanwork, name: Glean}
+  - {ats: ashby, token: langchain, name: LangChain}
+  - {ats: ashby, token: pinecone, name: Pinecone}
+  - {ats: ashby, token: modal, name: Modal}
+  - {ats: ashby, token: replit, name: Replit}
+  - {ats: ashby, token: runway, name: Runway}
+  - {ats: ashby, token: elevenlabs, name: ElevenLabs}
+  - {ats: ashby, token: writer, name: Writer}
+  - {ats: ashby, token: abridge, name: Abridge}
+  - {ats: ashby, token: ambiencehealthcare, name: Ambience Healthcare}
+  - {ats: ashby, token: vapi, name: Vapi}
+  - {ats: greenhouse, token: cresta, name: Cresta}
+  - {ats: ashby, token: rogo, name: Rogo}
+  - {ats: ashby, token: mercor, name: Mercor}
+  - {ats: ashby, token: braintrust, name: Braintrust}
+  - {ats: greenhouse, token: databricks, name: Databricks}
+  - {ats: greenhouse, token: xai, name: xAI}
+  - {ats: ashby, token: character, name: Character.AI}
+  - {ats: ashby, token: anyscale, name: Anyscale}
+  - {ats: greenhouse, token: snorkelai, name: Snorkel AI}
+  - {ats: greenhouse, token: sambanovasystems, name: SambaNova}
+  - {ats: ashby, token: unstructured, name: Unstructured}
+  - {ats: ashby, token: llamaindex, name: LlamaIndex}
+  - {ats: ashby, token: dust, name: Dust}
+
+  # --- Data / analytics platforms ----------------------------------------
+  - {ats: greenhouse, token: datadog, name: Datadog}
+  - {ats: greenhouse, token: mongodb, name: MongoDB}
+  - {ats: greenhouse, token: elastic, name: Elastic}
+  - {ats: greenhouse, token: fivetran, name: Fivetran}
+  - {ats: ashby, token: astronomer, name: Astronomer}
+  - {ats: ashby, token: hex, name: Hex}
+  - {ats: greenhouse, token: mixpanel, name: Mixpanel}
+  - {ats: greenhouse, token: samsara, name: Samsara}
+  - {ats: greenhouse, token: sigmacomputing, name: Sigma Computing}
+  - {ats: ashby, token: motherduck, name: MotherDuck}
+  - {ats: ashby, token: clickhouse, name: ClickHouse}
+  - {ats: ashby, token: supabase, name: Supabase}
+  - {ats: greenhouse, token: pagerduty, name: PagerDuty}
+  - {ats: greenhouse, token: newrelic, name: New Relic}
+  - {ats: greenhouse, token: gitlab, name: GitLab}
+  - {ats: greenhouse, token: cloudflare, name: Cloudflare}
+  - {ats: greenhouse, token: twilio, name: Twilio}
+  - {ats: greenhouse, token: okta, name: Okta}
+  - {ats: greenhouse, token: vercel, name: Vercel}
+  - {ats: greenhouse, token: grafanalabs, name: Grafana Labs}
+  - {ats: ashby, token: temporal, name: Temporal}
+
+  # --- Scaled product companies (big AI/data orgs) ------------------------
+  - {ats: greenhouse, token: stripe, name: Stripe}
+  - {ats: greenhouse, token: airbnb, name: Airbnb}
+  - {ats: greenhouse, token: figma, name: Figma}
+  - {ats: ashby, token: notion, name: Notion}
+  - {ats: greenhouse, token: robinhood, name: Robinhood}
+  - {ats: greenhouse, token: coinbase, name: Coinbase}
+  - {ats: greenhouse, token: instacart, name: Instacart}
+  - {ats: greenhouse, token: doordashusa, name: DoorDash}
+  - {ats: greenhouse, token: pinterest, name: Pinterest}
+  - {ats: greenhouse, token: lyft, name: Lyft}
+  - {ats: greenhouse, token: reddit, name: Reddit}
+  - {ats: greenhouse, token: discord, name: Discord}
+  - {ats: greenhouse, token: dropbox, name: Dropbox}
+  - {ats: greenhouse, token: asana, name: Asana}
+  - {ats: greenhouse, token: duolingo, name: Duolingo}
+  - {ats: greenhouse, token: block, name: Block}
+  - {ats: greenhouse, token: affirm, name: Affirm}
+  - {ats: greenhouse, token: chime, name: Chime}
+  - {ats: greenhouse, token: brex, name: Brex}
+  - {ats: ashby, token: ramp, name: Ramp}
+  - {ats: greenhouse, token: gusto, name: Gusto}
+  - {ats: greenhouse, token: toast, name: Toast}
+  - {ats: greenhouse, token: nextdoor, name: Nextdoor}
+  - {ats: greenhouse, token: roblox, name: Roblox}
+  - {ats: greenhouse, token: waymo, name: Waymo}
+  - {ats: greenhouse, token: nuro, name: Nuro}
+  - {ats: greenhouse, token: intercom, name: Intercom}
+  - {ats: greenhouse, token: squarespace, name: Squarespace}
+  - {ats: greenhouse, token: airtable, name: Airtable}
+  - {ats: ashby, token: linear, name: Linear}
+  - {ats: greenhouse, token: faire, name: Faire}
+  - {ats: greenhouse, token: carta, name: Carta}
+  - {ats: greenhouse, token: mercury, name: Mercury}
+  - {ats: lever, token: palantir, name: Palantir}
+  - {ats: lever, token: spotify, name: Spotify}
+  - {ats: greenhouse, token: ziprecruiter, name: ZipRecruiter}
+  - {ats: greenhouse, token: flatironhealth, name: Flatiron Health}
+  - {ats: ashby, token: benchling, name: Benchling}
+
+  # --- Austin-heavy -------------------------------------------------------
+  - {ats: greenhouse, token: aceable, name: Aceable}
+
+  # --- Added after probing (verified live) ---------------------------------
+  - {ats: ashby, token: perplexity, name: Perplexity}
+  - {ats: ashby, token: cursor, name: Cursor (Anysphere)}
+  - {ats: ashby, token: cognition, name: Cognition}
+  - {ats: ashby, token: fireworks, name: Fireworks AI}
+  - {ats: greenhouse, token: togetherai, name: Together AI}
+  - {ats: ashby, token: lambda, name: Lambda}
+  - {ats: ashby, token: crusoe, name: Crusoe}
+  - {ats: ashby, token: cerebras, name: Cerebras}
+  - {ats: ashby, token: exa, name: Exa}
+  - {ats: ashby, token: deepgram, name: Deepgram}
+  - {ats: greenhouse, token: arizeai, name: Arize AI}
+  - {ats: greenhouse, token: assemblyai, name: AssemblyAI}
+  - {ats: greenhouse, token: lightningai, name: Lightning AI}
+  - {ats: greenhouse, token: labelbox, name: Labelbox}
+  - {ats: greenhouse, token: tavily, name: Tavily}
+  - {ats: ashby, token: letta, name: Letta}
+  - {ats: ashby, token: mem0, name: Mem0}
+  - {ats: ashby, token: lumaai, name: Luma AI}
+  - {ats: ashby, token: midjourney, name: Midjourney}
+  - {ats: ashby, token: synthesia, name: Synthesia}
+  - {ats: greenhouse, token: heygen, name: HeyGen}
+  - {ats: greenhouse, token: stabilityai, name: Stability AI}
+  - {ats: ashby, token: snowflake, name: Snowflake}
+  - {ats: ashby, token: airbyte, name: Airbyte}
+  - {ats: ashby, token: amplitude, name: Amplitude}
+  - {ats: ashby, token: plaid, name: Plaid}
+  - {ats: ashby, token: zapier, name: Zapier}
+  - {ats: ashby, token: webflow, name: Webflow}
+  - {ats: greenhouse, token: singlestore, name: SingleStore}
+  - {ats: greenhouse, token: dremio, name: Dremio}
+  - {ats: greenhouse, token: starburst, name: Starburst}
+  - {ats: greenhouse, token: cockroachlabs, name: Cockroach Labs}
+  - {ats: greenhouse, token: planetscale, name: PlanetScale}
+  - {ats: greenhouse, token: 6sense, name: 6sense}
+  - {ats: lever, token: outreach, name: Outreach}
+  - {ats: greenhouse, token: yext, name: Yext}
+  - {ats: greenhouse, token: anaplan, name: Anaplan}
+  - {ats: greenhouse, token: qualtrics, name: Qualtrics}
+  - {ats: greenhouse, token: smartsheet, name: Smartsheet}
+  - {ats: greenhouse, token: sofi, name: SoFi}
+  - {ats: greenhouse, token: upstart, name: Upstart}
+  - {ats: greenhouse, token: verkada, name: Verkada}
+  - {ats: ashby, token: skydio, name: Skydio}
+  - {ats: lever, token: zoox, name: Zoox}
+  - {ats: ashby, token: saronic, name: Saronic}
+  - {ats: ashby, token: onebrief, name: Onebrief}
+  - {ats: greenhouse, token: disco, name: DISCO}
+  - {ats: lever, token: ro, name: Ro}
+  - {ats: lever, token: bazaarvoice, name: Bazaarvoice}
+  - {ats: lever, token: arcadia, name: Arcadia}
+  - {ats: ashby, token: eightsleep, name: Eight Sleep}
+
+# Free aggregator sources (no company list needed). Use `jobhunt scrape --sources ...` to restrict.
+aggregators: [remotive, remoteok, himalayas, hn]

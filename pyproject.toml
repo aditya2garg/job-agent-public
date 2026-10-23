@@ -1,0 +1,37 @@
+[project]
+name = "jobhunt"
+version = "0.1.0"
+description = "Scrape AI / data job postings and score them against a resume with an explainable match model."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "httpx>=0.27",
+  "pyyaml>=6.0",
+  "typer>=0.12",
+  "rich>=13.7",
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+  "scikit-learn>=1.4",
+  "pypdf>=4.0",
+  "beautifulsoup4>=4.12",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+jobspy = ["python-jobspy>=1.1.80"]
+
+[project.scripts]
+jobhunt = "jobhunt.cli:app"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["jobhunt*"]
+
+[tool.setuptools.package-data]
+jobhunt = ["web/static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

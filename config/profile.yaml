@@ -1,0 +1,150 @@
+# Candidate profile, hand-derived from the candidate's resume. Proficiency is honest, not aspirational:
+#   1.0 = production expert, recent   0.8 = strong   0.55 = working / adjacent
+#   0.3 = familiar / transferable     0 = none
+# Keys are canonical skill ids from jobhunt/taxonomy.py. Anything not listed counts as 0.
+# Edit freely: scores update on the next `jobhunt score`.
+
+name: Sample Candidate
+headline: AI Engineer (agentic platforms, MCP, RAG) with a data / analytics engineering foundation
+summary: >
+  Production agentic AI platform builder at Employer A -- MCP tool-calling, Snowflake Cortex agents,
+  semantic-layer text-to-SQL, guardrails + HITL, LangChain RAG, Slack observability.  Before that: BI and
+  analytics engineering (Airflow, dbt, Snowflake, IICS) at Employer A, Employer B and Employer C.
+
+timeline:
+  ai_engineering_start: "2024-10"   # Employer A - AI Engineer
+  data_start: "2019-06"             # first data role / internship (Employer D -> Employer C)
+  career_start: "2018-09"
+  software_equivalent_years: 3.5    # Python/SQL services, APIs, pipelines; no pure SWE title
+
+education:
+  - {degree: "MS Information Technology Management", school: "University A"}
+  - {degree: "BE Information Technology", school: "University B"}
+
+proficiency:
+  # --- LLM / agentic ---
+  llm: 0.95
+  genai: 0.90
+  agents: 1.0
+  mcp: 1.0
+  rag: 0.85
+  agent_frameworks: 0.85     # LangChain, LangGraph
+  llm_apis: 1.0              # OpenAI, Anthropic, Snowflake Cortex, Glean
+  prompt_eng: 0.90
+  tool_calling: 1.0
+  llm_evals: 0.75            # accuracy tracking on weekly prompts, confidence thresholds
+  guardrails: 0.90
+  hitl: 0.95
+  text_to_sql: 0.85          # Snowflake Agents over semantic views
+  vector_db: 0.50
+  embeddings: 0.55
+  fine_tuning: 0.0
+  llm_serving: 0.15
+  computer_vision: 0.05
+  speech: 0.0
+  # --- classical ML / DL ---
+  nlp: 0.50
+  ml_general: 0.50
+  mlops: 0.50
+  statistics: 0.50
+  pytorch: 0.05
+  tensorflow: 0.0
+  transformers: 0.20
+  deep_learning: 0.15
+  recsys: 0.0
+  # --- data ---
+  python: 1.0
+  sql: 1.0
+  pandas: 0.80
+  snowflake: 1.0
+  dbt: 0.85
+  airflow: 0.90
+  spark: 0.60
+  kafka: 0.10
+  databricks: 0.35
+  bigquery: 0.80
+  redshift: 0.70
+  postgres: 0.70
+  elasticsearch: 0.70
+  etl: 0.95
+  data_modeling: 0.85
+  data_warehouse: 0.95
+  semantic_layer: 1.0
+  data_quality: 0.70
+  data_governance: 0.70
+  orchestration: 0.55
+  streaming: 0.15
+  lakehouse: 0.30
+  nosql: 0.30
+  bi_tools: 0.90
+  # --- software ---
+  rest_api: 0.85
+  python_web: 0.55
+  microservices: 0.60
+  system_design: 0.70
+  distributed_systems: 0.40
+  ci_cd: 0.60
+  testing: 0.50
+  javascript: 0.50
+  typescript: 0.35
+  node: 0.30
+  react: 0.20
+  graphql: 0.20
+  grpc: 0.10
+  java: 0.0
+  go: 0.0
+  rust: 0.0
+  cpp: 0.0
+  ruby: 0.0
+  scala: 0.05
+  csharp: 0.0
+  php: 0.0
+  # --- cloud / devops ---
+  aws: 0.80
+  gcp: 0.80
+  azure: 0.60
+  kubernetes: 0.75
+  docker: 0.70
+  terraform: 0.60
+  observability: 0.85
+  linux: 0.60
+  security_compliance: 0.70
+
+# Resume proof points. Matched to each job's themes to produce tailored talking points.
+evidence:
+  - id: agentic_platform
+    themes: [agents, mcp, llm, tool_calling, llm_apis, genai, kubernetes]
+    statement: "Architected a production agentic AI platform (Python, Kubernetes) used across the organization; tracked accuracy on a large weekly prompt set; integrated multiple LLM providers through MCP for tool-calling and structured reasoning."
+  - id: snowflake_agents
+    themes: [text_to_sql, semantic_layer, snowflake, agents, data_modeling]
+    statement: "Built an intent-based routing system and migrated legacy semantic models into dynamic semantic views; deployed multiple Snowflake Agents that autonomously query semantic views and skills."
+  - id: guardrails_hitl
+    themes: [guardrails, hitl, llm_evals, security_compliance, agents]
+    statement: "Designed guardrails and least-privilege compliance controls, YAML-driven fallback for low-confidence responses, and a human-in-the-loop feedback loop that refines agent reasoning."
+  - id: observability
+    themes: [observability, llm_evals, agents, tool_calling, ci_cd]
+    statement: "Instrumented agent observability via a Slack-Bolt daemon across many releases: function calling, response streaming, centralized logging of full request/response payloads, routing paths, user feedback and errors."
+  - id: rag_pipeline
+    themes: [rag, embeddings, vector_db, agent_frameworks, nlp]
+    statement: "Mentored a senior engineer on a LangChain RAG pipeline over a claims library, improving retrieval accuracy and cutting latency."
+  - id: marketing_analytics
+    themes: [sql, airflow, python, etl, bi_tools, statistics]
+    statement: "Built Airflow/Python/SQL pipelines for growth, engagement and retention metrics that informed marketing budget decisions, increasing applies and lowering CPA."
+  - id: finance_data_platform
+    themes: [etl, data_warehouse, data_governance, rest_api, data_modeling, aws, gcp, azure]
+    statement: "At Employer B, built IICS/REST/JDBC ETL for the Finance system and migrated legacy data to a central warehouse, improving latency, cost, accuracy and PII security."
+  - id: cloud_cost
+    themes: [aws, gcp, azure, observability, mlops, security_compliance]
+    statement: "Detected a DDoS attack on the ML-Ops platform and reduced monthly cloud spend across AWS/Azure/GCP."
+  - id: nlp_scraping
+    themes: [nlp, python, ml_general, etl]
+    statement: "Scraped a large company dataset (Selenium, LinkedIn API) with fuzzy matching and NER; applied KNN clustering to surface new clients."
+  - id: analytics_leadership
+    themes: [bi_tools, sql, data_modeling, statistics]
+    statement: "Led analytics engineering for executive stakeholders: KPI reporting, COGS forecasting, MBR/QBR dashboards in Tableau."
+
+# Known gaps -- used in red-flag messaging. Not used for scoring directly (proficiency does that).
+known_gaps:
+  - "No model training / fine-tuning / PyTorch experience (JDs that need this are real gaps)"
+  - "No Java / Go / Rust / C++ production experience"
+  - "Limited dedicated AI-engineering tenure"

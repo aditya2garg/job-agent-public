@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jobhunt · match dashboard</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo">J</div>
+    <div>
+      <h1>jobhunt</h1>
+      <p id="subtitle">Loading…</p>
+    </div>
+  </div>
+  <div class="stat-row" id="stats"></div>
+  <div class="actions">
+    <span id="refresh-msg" class="muted"></span>
+    <button id="refresh" class="btn primary">Refresh jobs</button>
+  </div>
+</header>
+
+<section class="filters">
+  <input id="q" type="search" placeholder="Search company, title, location…" autocomplete="off">
+  <div class="seg" id="seg-verdict" role="group" aria-label="Verdict">
+    <button data-v="" class="on">All</button>
+    <button data-v="Apply now">Apply now</button>
+    <button data-v="Apply">Apply</button>
+    <button data-v="Stretch">Stretch</button>
+  </div>
+  <div class="seg multi" id="seg-loc" role="group" aria-label="Location">
+    <button data-v="bay_area">Bay Area</button>
+    <button data-v="austin">Austin</button>
+    <button data-v="remote_us">Remote</button>
+  </div>
+  <div class="seg" id="seg-tier" role="group" aria-label="Role type">
+    <button data-v="" class="on">Any role</button>
+    <button data-v="preferred">Preferred</button>
+    <button data-v="adjacent">Adjacent</button>
+    <button data-v="longshot">Long-shot</button>
+  </div>
+  <label class="sel">Min pay
+    <select id="minsal">
+      <option value="">any</option>
+      <option value="170000">≥ $170k</option>
+      <option value="220000">≥ $220k</option>
+      <option value="300000">≥ $300k</option>
+    </select>
+  </label>
+  <label class="sel">Status
+    <select id="status">
+      <option value="">active</option>
+      <option value="saved">saved</option>
+      <option value="applied">applied</option>
+      <option value="interviewing">interviewing</option>
+      <option value="ignored">ignored</option>
+    </select>
+  </label>
+  <label class="sel range">Min score <b id="minscore-val">60</b>
+    <input id="minscore" type="range" min="0" max="95" value="60">
+  </label>
+</section>
+
+<main class="layout">
+  <div class="list-wrap">
+    <div class="list-head"><span id="count"></span></div>
+    <div id="list" class="list" aria-live="polite"></div>
+  </div>
+  <aside id="detail" class="detail" aria-label="Job detail">
+    <div class="empty-detail">
+      <div class="big">↖</div>
+      <h3>Pick a job to see the full match analysis</h3>
+      <p>Score breakdown, matched skills, gaps, resume talking points and — when an LLM key is configured — a critical second opinion.</p>
+    </div>
+  </aside>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>
