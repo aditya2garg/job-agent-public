@@ -1,0 +1,53 @@
+# H-1B sponsorship overrides. Company-level history comes from DOL LCA disclosure data
+# (`jobhunt h1b-update`); the posting text is checked separately for every job.
+#
+# aliases: DOL files use legal entity names. Map a company's display name (as it appears on the
+#          posting) to employer-name prefixes to sum filings across entities.
+# known_sponsors / known_no_sponsorship: force a company's status (from your own knowledge or
+#          a recruiter). Names are matched after normalising punctuation and suffixes like Inc/LLC.
+
+aliases:
+  Meta: [meta platforms, facebook]
+  Google: [google, alphabet]
+  Amazon: [amazon com services, amazon web services, amazon data services, amazon dev center, amazon development center, amazon corporate, amazon fulfillment, annapurna labs, amazon]
+  Apple: [apple]
+  Microsoft: [microsoft]
+  Netflix: [netflix]
+  NVIDIA: [nvidia]
+  Uber: [uber technologies, uber]
+  Salesforce: [salesforce, slack technologies, tableau software]
+  Adobe: [adobe]
+  OpenAI: [openai opco, openai]
+  Anthropic: [anthropic]
+  Block: [block, square]
+  Scale AI: [scale ai]
+  Cursor (Anysphere): [anysphere]
+  Databricks: [databricks]
+  Snowflake: [snowflake]
+  Stripe: [stripe]
+  Lyft: [lyft]
+  DoorDash: [doordash]
+  Airbnb: [airbnb]
+  Roblox: [roblox]
+  Pinterest: [pinterest]
+  Perplexity: [perplexity ai, perplexity]
+  Glean: [glean technologies, glean]
+  Cohere: [cohere]
+  Hugging Face: [hugging face]
+  Weights & Biases: [weights and biases]
+  ZipRecruiter: [ziprecruiter]
+  Elastic: [elasticsearch]
+  Instacart: [maplebear]
+  Carta: [eshares]
+  Ramp: [ramp business]
+  Decagon: [decagon ai]
+  Harvey: [harvey ai]
+  Crusoe: [crusoe energy]
+  Together AI: [together computer]
+  Upstart: [upstart network]
+  ElevenLabs: [eleven labs]
+  Zillow: [zillow]
+  DoorDash: [doordash]
+
+known_sponsors: []
+known_no_sponsorship: []

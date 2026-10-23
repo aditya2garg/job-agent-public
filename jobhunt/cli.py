@@ -148,6 +148,18 @@ def export(
         console.print(text, highlight=False, markup=False)
 
 
+@app.command("h1b-update")
+def h1b_update(files: Optional[list[str]] = typer.Option(None, "--file", "-f", help="DOL file ids, e.g. FY2026_Q1 (default: latest 3 quarters)")) -> None:
+    """Download US DOL LCA disclosure data and build the per-employer H-1B sponsorship index."""
+    from . import sponsorship
+
+    paths = sponsorship.download(files, progress=lambda m: console.print(m))
+    with console.status("Indexing certified H-1B LCAs (a few minutes)...") as st:
+        idx = sponsorship.build_index(paths, progress=lambda m: st.update(f"Indexing... {m}"))
+    emp = idx["employers"]
+    console.print(f"Indexed {len(emp):,} employers with certified H-1B LCAs from {', '.join(idx['files'])}.")
+
+
 @app.command("check-companies")
 def check_companies_cmd() -> None:
     """Probe every configured careers board and report dead tokens."""

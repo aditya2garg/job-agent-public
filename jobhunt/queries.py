@@ -18,6 +18,23 @@ WHERE j.active = 1
 """
 
 
+def _sponsor_state(sp: dict[str, Any] | None) -> str:
+    if not sp or not sp.get("needs"):
+        return "n/a"
+    if sp["stance"] == "no":
+        return "no"
+    if sp["stance"] == "yes":
+        return "yes"
+    if sp.get("company_no") or sp["history"].get("override") == "no":
+        return "no"
+    h = sp["history"]
+    if not h["available"]:
+        return "unknown"
+    if h["certified"] == 0:
+        return "no_history"
+    return "history"
+
+
 def _summary(row: Any) -> dict[str, Any]:
     d = json.loads(row["details"])
     sal = d["salary"]
@@ -29,6 +46,8 @@ def _summary(row: Any) -> dict[str, Any]:
         "breakdown": json.loads(row["breakdown"]),
         "salary_known": bool(sal.get("known")), "salary_low": sal.get("low"), "salary_high": sal.get("high"),
         "salary_note": sal.get("note"), "pros": d.get("pros", []), "cons": d.get("cons", []), "flags": [m for _, m in d.get("flags", [])],
+        "age_days": d.get("age_days"), "sponsorship": d.get("sponsorship", {}).get("note"),
+        "sponsorship_state": _sponsor_state(d.get("sponsorship")),
         "status": row["status"], "notes": row["notes"], "has_llm": bool(row["has_llm"]),
     }
 
@@ -42,6 +61,7 @@ def ranked(
     status: str | None = None,
     q: str | None = None,
     include_hidden: bool = False,
+    hide_no_sponsor: bool = False,
     limit: int = 500,
     offset: int = 0,
 ) -> tuple[list[dict[str, Any]], int]:
@@ -69,6 +89,8 @@ def ranked(
         rows = [r for r in rows if r["location_kind"] in wanted]
     if min_salary:
         rows = [r for r in rows if r["salary_known"] and (r["salary_high"] or 0) >= min_salary]
+    if hide_no_sponsor:
+        rows = [r for r in rows if r["sponsorship_state"] not in ("no", "no_history")]
     total = len(rows)
     return rows[offset : offset + limit], total
 

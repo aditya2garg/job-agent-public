@@ -27,6 +27,9 @@ CREATE TABLE IF NOT EXISTS llm (
 CREATE TABLE IF NOT EXISTS state (
   job_id TEXT PRIMARY KEY, status TEXT, notes TEXT, updated_at TEXT
 );
+CREATE TABLE IF NOT EXISTS company_sponsor (
+  company TEXT PRIMARY KEY, postings INTEGER, no_sponsor INTEGER, updated_at TEXT
+);
 CREATE TABLE IF NOT EXISTS runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT, started_at TEXT, kind TEXT, stats TEXT
 );
@@ -114,3 +117,17 @@ def save_score(conn: sqlite3.Connection, job_id: str, result: dict[str, Any]) ->
 
 def record_run(conn: sqlite3.Connection, kind: str, stats: dict[str, Any]) -> None:
     conn.execute("INSERT INTO runs (started_at,kind,stats) VALUES (?,?,?)", (now(), kind, json.dumps(stats)))
+
+
+def save_company_policy(conn: sqlite3.Connection, stats: dict[str, tuple[int, int]]) -> None:
+    ts = now()
+    for company, (n, no) in stats.items():
+        conn.execute(
+            "INSERT INTO company_sponsor (company,postings,no_sponsor,updated_at) VALUES (?,?,?,?) "
+            "ON CONFLICT(company) DO UPDATE SET postings=excluded.postings, no_sponsor=excluded.no_sponsor, updated_at=excluded.updated_at",
+            (company, n, no, ts),
+        )
+
+
+def load_company_policy(conn: sqlite3.Connection) -> dict[str, tuple[int, int]]:
+    return {r["company"]: (r["postings"], r["no_sponsor"]) for r in conn.execute("SELECT * FROM company_sponsor")}

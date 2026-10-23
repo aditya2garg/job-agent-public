@@ -30,7 +30,9 @@ def mk(title, desc, loc="San Francisco, CA", **kw):
 
 def run(job):
     ctx = Context.load()
-    return combine(analyze(job, ctx), 60.0, ctx)
+    a = analyze(job, ctx)
+    a["details"]["sponsorship_raw"]["history"] = {"available": True, "certified": 400, "tech": 300}
+    return combine(a, 60.0, ctx)
 
 
 def test_role_classification():

@@ -14,10 +14,12 @@ from .models import Job
 from .roles import classify_role
 from .sources.ats import FETCHERS
 from .sources.base import make_client
+from .sources.bigtech import FETCHERS as BIGTECH
 from .sources.boards import BOARDS
+from .extract import sponsorship_stance
 
 console = Console()
-SOURCE_PRIORITY = {"greenhouse": 0, "lever": 0, "ashby": 0, "hn": 2, "remotive": 3, "remoteok": 3, "himalayas": 3}
+SOURCE_PRIORITY = {"greenhouse": 0, "lever": 0, "ashby": 0, "amazon": 0, "eightfold": 0, "workday": 0, "linkedin": 2, "apple": 0, "hn": 2, "remotive": 3, "remoteok": 3, "himalayas": 3}
 
 
 @dataclass
@@ -30,6 +32,8 @@ class ScrapeStats:
     dropped_role: int = 0
     dropped_location: int = 0
     dropped_age: int = 0
+    dropped_undated: int = 0
+    bigtech_ok: int = 0
     dropped_duplicate: int = 0
     new: int = 0
     updated: int = 0
@@ -47,14 +51,17 @@ def _parse_dt(value: str | None) -> dt.datetime | None:
     return d if d.tzinfo else d.replace(tzinfo=dt.timezone.utc)
 
 
-def keep_job(job: Job, stats: ScrapeStats, max_age_days: int, require_us: bool) -> bool:
+def keep_job(job: Job, stats: ScrapeStats, max_age_days: int, require_us: bool, require_date: bool = True) -> bool:
     if not job.title or not job.url:
         return False
     if classify_role(job.title) is None:
         stats.dropped_role += 1
         return False
     posted = _parse_dt(job.posted_at)
-    if posted and (dt.datetime.now(dt.timezone.utc) - posted).days > max_age_days:
+    if posted is None and require_date:
+        stats.dropped_undated += 1
+        return False
+    if posted and (dt.datetime.now(dt.timezone.utc) - posted).total_seconds() > max_age_days * 86400:
         stats.dropped_age += 1
         return False
     if require_us and not classify_location(job.location, job.remote, job.description).us_eligible:
@@ -113,6 +120,30 @@ def run_scrape(
                         scanned_boards.add((j.source, j.company))
                 log(f"[{i}/{len(boards)}] {label}")
 
+    # ---- big tech / FAANG-level
+    bt = cfg.get("bigtech", [])
+    if wanted is None or wanted & {"bigtech", "faang"} or (wanted & {b["kind"] for b in bt}) or only_companies:
+        if only_companies:
+            lowered = {c.lower() for c in only_companies}
+            bt = [b for b in bt if b["name"].lower() in lowered]
+        elif wanted and not wanted & {"bigtech", "faang"}:
+            bt = [b for b in bt if b["kind"] in wanted]
+        def bt_work(b: dict) -> tuple[dict, list[Job] | Exception]:
+            try:
+                return b, BIGTECH[b["kind"]](make_client(timeout=60), b, prefs["max_age_days"])
+            except Exception as exc:  # noqa: BLE001
+                return b, exc
+
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            for b, res in pool.map(bt_work, bt):
+                if isinstance(res, Exception):
+                    stats.boards_failed.append(f"{b['name']} ({b['kind']}): {type(res).__name__}: {res}")
+                    continue
+                stats.bigtech_ok += 1
+                stats.per_source[b["name"]] = len(res)
+                collected.extend(res)
+                log(f"{b['name']}: {len(res)} fresh postings")
+
     # ---- aggregators
     agg_client = make_client()
     agg_names = [a for a in cfg.get("aggregators", []) if wanted is None or a in wanted]
@@ -134,10 +165,20 @@ def run_scrape(
 
     stats.fetched = len(collected)
 
+    # Company-level sponsorship stance across *everything* fetched (before any filtering).
+    policy: dict[str, list[int]] = {}
+    for job in collected:
+        if job.source in ("hn", "remoteok", "remotive", "himalayas"):
+            continue
+        t = policy.setdefault(job.company, [0, 0])
+        t[0] += 1
+        stance, ev = sponsorship_stance(job.description)
+        t[1] += stance == "no" and "sponsor" in ev.lower()
+
     # ---- filter + dedupe
     survivors: dict[str, Job] = {}
     for job in collected:
-        if not keep_job(job, stats, prefs["max_age_days"], prefs["require_us_eligible"]):
+        if not keep_job(job, stats, prefs["max_age_days"], prefs["require_us_eligible"], prefs.get("require_posted_date", True)):
             continue
         prev = survivors.get(job.dedupe_key)
         if prev is None or SOURCE_PRIORITY.get(job.source.split(":")[0], 1) < SOURCE_PRIORITY.get(prev.source.split(":")[0], 1):
@@ -158,6 +199,8 @@ def run_scrape(
             final.append(job)
         stats.kept = len(final)
         stats.new, stats.updated = db.upsert_jobs(conn, final)
+        if wanted is None or not only_companies:
+            db.save_company_policy(conn, {c: (n, no) for c, (n, no) in policy.items()})
         if not only_companies and (wanted is None or run_ats):
             stats.closed = db.mark_inactive(conn, scanned_boards, started)
         db.record_run(conn, "scrape", stats.__dict__)

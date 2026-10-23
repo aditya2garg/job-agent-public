@@ -35,9 +35,11 @@ from .extract import (
     find_flags,
     job_location_hints,
     parse_salary,
+    sponsorship_stance,
     years_required,
 )
 from .models import Job
+from . import sponsorship as spons
 from .roles import RoleMatch, classify_role, excluded_by, soft_penalties
 from .taxonomy import AI_CATEGORIES, BY_ID
 
@@ -76,6 +78,18 @@ class Context:
 
 
 # ------------------------------------------------------------------ dimension scorers
+
+
+def age_days(posted_at: str | None) -> int | None:
+    if not posted_at:
+        return None
+    try:
+        d = dt.datetime.fromisoformat(posted_at.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if d.tzinfo is None:
+        d = d.replace(tzinfo=dt.timezone.utc)
+    return max(0, (dt.datetime.now(dt.timezone.utc) - d).days)
 
 
 def _clip(x: float, lo: float = 0.0, hi: float = 100.0) -> float:
@@ -211,6 +225,26 @@ def score_location(loc: LocationInfo, prefs: dict[str, Any]) -> tuple[float, dic
     return s, {"kind": loc.kind, "label": labels[loc.kind], "remote": loc.remote, "matched": loc.matched}
 
 
+def score_sponsorship(raw: dict[str, Any], company_policy: dict[str, Any], prefs: dict[str, Any]) -> tuple[float, dict[str, Any]]:
+    cfg = prefs["sponsorship"]
+    stance, hist = raw["stance"], raw["history"]
+    info = {**raw, "company_no_share": company_policy.get("share", 0.0), "company_no": bool(company_policy.get("no")), "needs": cfg["needs_sponsorship"]}
+    if not cfg["needs_sponsorship"]:
+        return 100.0, {**info, "note": "sponsorship not required"}
+    hscore, hnote = spons.history_score(hist, cfg)
+    if stance == "no":
+        score, note = 0.0, "posting says it will NOT sponsor: " + raw["evidence"][:140]
+    elif stance == "yes":
+        score, note = 100.0, "posting offers sponsorship: " + raw["evidence"][:140]
+    elif info["company_no"]:
+        score, note = 5.0, f"company says no sponsorship in {int(info['company_no_share'] * 100)}% of its postings"
+    else:
+        score, note = hscore, hnote
+    info["history_note"] = hnote
+    info["note"] = note
+    return score, info
+
+
 # ------------------------------------------------------------------ evidence / narrative
 
 
@@ -263,6 +297,16 @@ def _headline(dims: dict[str, float], d: dict[str, Any]) -> tuple[list[str], lis
         pos.append(d["location"]["label"])
     else:
         neg.append(f"Location: {d['location']['label']}")
+    sp = d["sponsorship"]
+    if sp["needs"]:
+        if sp["stance"] == "no" or sp["company_no"] or sp["history"].get("override") == "no":
+            neg.append("No H-1B sponsorship: " + sp["note"])
+        elif sp["stance"] == "yes":
+            pos.append("Offers visa sponsorship")
+        elif sp["history"]["available"] and sp["history"]["certified"] == 0:
+            neg.append("No H-1B sponsorship history found; confirm before applying")
+        elif sp["history"]["available"] and sp["history"]["tech"] >= 10:
+            pos.append("Established H-1B sponsor")
     if d["skills"]["n_skills"] < 5:
         neg.append("Thin job description: score is low-confidence")
     for _, msg in d["flags"]:
@@ -300,20 +344,28 @@ def analyze(job: Job, ctx: Context) -> dict[str, Any]:
     if job.employment_type and re.search(r"contract|temp|intern", job.employment_type, re.IGNORECASE):
         flags.append(("contract", "Contract / temporary position"))
 
+    stance, evidence = sponsorship_stance(desc)
+    sponsor_raw = {"stance": stance, "evidence": evidence, "history": spons.company_history(job.company)}
+
     return {
+        "company": job.company,
         "dims": {"role": role_score, "skills": sk_score, "seniority": sen_score, "compensation": comp_score, "location": loc_score},
         "details": {
             "role": role_info, "skills": sk_info, "seniority": sen_info, "salary": comp_info, "location": loc_info,
-            "flags": flags, "evidence": match_evidence(hits, ctx),
+            "flags": flags, "evidence": match_evidence(hits, ctx), "sponsorship_raw": sponsor_raw,
+            "age_days": age_days(job.posted_at),
         },
     }
 
 
-def combine(analysis: dict[str, Any], semantic: float, ctx: Context) -> dict[str, Any]:
+def combine(analysis: dict[str, Any], semantic: float, ctx: Context, company_policy: dict[str, Any] | None = None) -> dict[str, Any]:
     w = ctx.prefs["weights"]
-    dims = {**analysis["dims"], "semantic": semantic}
-    heuristic = sum(w[k] * dims[k] for k in w)
     d = analysis["details"]
+    sp_score, sp_info = score_sponsorship(d["sponsorship_raw"], company_policy or {}, ctx.prefs)
+    d = {**d, "sponsorship": sp_info}
+    d.pop("sponsorship_raw", None)
+    dims = {**analysis["dims"], "semantic": semantic, "sponsorship": sp_score}
+    heuristic = sum(w[k] * dims[k] for k in w)
     cap, caps = 100.0, []
 
     def gate(limit: float, why: str) -> None:
@@ -335,6 +387,15 @@ def combine(analysis: dict[str, Any], semantic: float, ctx: Context) -> dict[str
         gate(60, "contract role")
     if d["salary"].get("below_floor"):
         gate(58, "posted pay below your minimum")
+    sp_cfg = ctx.prefs["sponsorship"]
+    if sp_cfg["needs_sponsorship"]:
+        if sp_info["stance"] == "no":
+            gate(sp_cfg["cap_role_no"], "posting says no visa sponsorship")
+        elif sp_info["stance"] != "yes":
+            if sp_info["company_no"] or sp_info["history"].get("override") == "no":
+                gate(sp_cfg["cap_company_no"], "company does not sponsor")
+            elif sp_info["history"]["available"] and sp_info["history"]["certified"] == 0:
+                gate(sp_cfg["cap_no_history"], "no H-1B sponsorship history found")
     if d["skills"]["n_skills"] == 0:
         gate(45, "no recognizable skills in the posting (thin description)")
     heuristic_final = min(heuristic, cap)
@@ -382,13 +443,35 @@ def _analyze_many(jobs: list[Job]) -> list[dict[str, Any]]:
         return [a for part in pool.map(_analyze_chunk, chunks) for a in part]
 
 
-def score_jobs(jobs: list[Job]) -> list[dict[str, Any]]:
+def company_policies(
+    jobs: list[Job], analyses: list[dict[str, Any]], ctx: Context, stats: dict[str, tuple[int, int]] | None = None
+) -> dict[str, dict[str, Any]]:
+    """A company 'generally' doesn't sponsor when most of its own postings say so.
+    `stats` (company -> (postings, no-sponsorship postings)) comes from the full scrape, including
+    postings later filtered out; otherwise fall back to the scored jobs."""
+    cfg = ctx.prefs["sponsorship"]
+    tally: dict[str, list[int]] = {c: [n, no] for c, (n, no) in (stats or {}).items()}
+    if not tally:
+        for job, a in zip(jobs, analyses):
+            raw = a["details"]["sponsorship_raw"]
+            t = tally.setdefault(job.company, [0, 0])
+            t[0] += 1
+            t[1] += raw["stance"] == "no" and "sponsor" in raw["evidence"].lower()
+    out = {}
+    for company, (n, no) in tally.items():
+        share = no / n if n else 0.0
+        out[company] = {"share": round(share, 2), "n": n, "no": n >= cfg["policy_min_postings"] and share >= cfg["policy_share"]}
+    return out
+
+
+def score_jobs(jobs: list[Job], policy_stats: dict[str, tuple[int, int]] | None = None) -> list[dict[str, Any]]:
     ctx = Context.load()
     analyses = _analyze_many(jobs)
     sem = semantic_scores(jobs, config.resume_text())
+    policy = company_policies(jobs, analyses, ctx, policy_stats)
     out = []
     for job, analysis, s in zip(jobs, analyses, sem):
-        res = combine(analysis, s, ctx)
+        res = combine(analysis, s, ctx, policy.get(job.company))
         res["job_id"] = job.id
         out.append(res)
     return out

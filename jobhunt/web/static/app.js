@@ -10,8 +10,8 @@ const el = (tag, attrs = {}, ...kids) => {
   return n;
 };
 
-const state = { verdict: "", tier: "", loc: new Set(), minsal: "", status: "", q: "", minscore: 60, selected: null, stats: null };
-const WEIGHTS = { role: .22, skills: .28, semantic: .07, seniority: .10, compensation: .18, location: .15 };
+const state = { verdict: "", tier: "", loc: new Set(), minsal: "", sponsor: "", status: "", q: "", minscore: 60, selected: null, stats: null };
+const WEIGHTS = { role: .20, skills: .26, semantic: .07, seniority: .08, compensation: .16, location: .13, sponsorship: .10 };
 const DIM_LABEL = { role: "Role fit", skills: "Skills", semantic: "Resume similarity", seniority: "Seniority", compensation: "Compensation", location: "Location" };
 
 const color = s => (s >= 84 ? "var(--green)" : s >= 74 ? "var(--lime)" : s >= 62 ? "var(--amber)" : "var(--slate)");
@@ -56,6 +56,7 @@ async function loadJobs() {
   if (state.tier) p.set("tier", state.tier);
   if (state.loc.size) p.set("location", [...state.loc].join(","));
   if (state.minsal) p.set("min_salary", state.minsal);
+  if (state.sponsor) p.set("hide_no_sponsor", "true");
   if (state.status) { p.set("status", state.status); p.set("include_hidden", "true"); }
   if (state.q) p.set("q", state.q);
   let data;
@@ -75,12 +76,14 @@ function card(j) {
   const pay = j.salary_known ? chip(`${money(j.salary_low)}–${money(j.salary_high)}`, j.salary_high >= 220000 ? "green" : j.salary_high >= 170000 ? "amber" : "red") : chip("pay n/d");
   const tier = { preferred: ["Preferred role", "accent"], adjacent: ["Adjacent", ""], longshot: ["Long-shot", ""] }[j.role_tier] || [j.role_tier, ""];
   const locCls = ["bay_area", "austin", "remote_us"].includes(j.location_kind) ? "green" : "";
+  const age = j.age_days == null ? null : chip(j.age_days === 0 ? "posted today" : `posted ${j.age_days}d ago`, j.age_days <= 2 ? "green" : "");
+  const sp = { no: ["No sponsorship", "red"], no_history: ["No H-1B history", "amber"], yes: ["Sponsors visas", "green"], history: ["H-1B sponsor", "green"] }[j.sponsorship_state];
   const n = el("article", { class: "card" + (state.selected === j.id ? " sel" : "") + (["ignored", "rejected"].includes(j.status) ? " hidden-state" : ""), tabindex: "0", "data-id": j.id },
     el("div", { class: "ring", style: `--p:${j.score};--c:${color(j.score)}` }, el("span", {}, Math.round(j.score))),
     el("div", {},
       el("h3", {}, j.title),
       el("div", { class: "co" }, j.company),
-      el("div", { class: "chips" }, chip(j.verdict, j.verdict === "Apply now" ? "green" : j.verdict === "Apply" ? "green" : j.verdict === "Stretch" ? "amber" : ""), chip(j.location_label, locCls), pay, chip(tier[0], tier[1]),
+      el("div", { class: "chips" }, chip(j.verdict, j.verdict === "Apply now" ? "green" : j.verdict === "Apply" ? "green" : j.verdict === "Stretch" ? "amber" : ""), chip(j.location_label, locCls), pay, age, sp ? chip(sp[0], sp[1]) : null, chip(tier[0], tier[1]),
         j.status !== "new" ? chip(j.status, "accent") : null, j.has_llm ? chip("LLM-reviewed", "accent") : null, ...j.flags.slice(0, 2).map(f => chip(f, "red"))),
       j.pros.length ? el("div", { class: "why" }, j.pros.slice(0, 2).join(" · ")) : null));
   const open = () => select(j.id);
@@ -122,13 +125,14 @@ function renderDetail(d) {
     compensation: det.salary.note,
     location: `${det.location.label}${det.location.matched ? " (" + det.location.matched + ")" : ""}`,
     semantic: "TF-IDF similarity to your resume, percentile among all scraped jobs",
+    sponsorship: det.sponsorship ? det.sponsorship.note : "",
   };
   const statusBtn = (s, label) => el("button", { class: "btn sm" + (d.status === s ? " on" : ""), onclick: async () => { await api(`/api/jobs/${d.id}/status`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: s }) }); await loadStats(); await loadJobs(); select(d.id); } }, label);
 
   const kids = [
     el("button", { class: "btn sm close-m", onclick: () => pane.classList.remove("open") }, "← Back"),
     el("div", { class: "d-head" },
-      el("div", {}, el("h2", {}, d.title), el("div", { class: "co" }, `${d.company} · ${d.location || "location n/a"}`)),
+      el("div", {}, el("h2", {}, d.title), el("div", { class: "co" }, `${d.company} · ${d.location || "location n/a"}` + (d.age_days == null ? "" : ` · posted ${d.age_days === 0 ? "today" : d.age_days + "d ago"}`))),
       el("div", { class: "bigscore", style: `color:${color(d.score)}` }, el("b", {}, Math.round(d.score)), el("span", {}, d.verdict))),
     el("div", { class: "d-actions" },
       el("a", { class: "btn primary sm", href: d.url, target: "_blank", rel: "noopener" }, "Open posting ↗"),
@@ -137,7 +141,7 @@ function renderDetail(d) {
     det.caps && det.caps.length ? el("div", { class: "hint" }, `Score capped (raw ${det.raw_weighted}): ${det.caps.join(", ")}`) : null,
 
     el("div", { class: "section" }, el("h4", {}, "Score breakdown"),
-      el("div", { class: "bars" }, ...["role", "skills", "compensation", "location", "seniority", "semantic"].flatMap(k => bar(DIM_LABEL[k], d.breakdown[k], WEIGHTS[k], notes[k])))),
+      el("div", { class: "bars" }, ...["role", "skills", "compensation", "location", "sponsorship", "seniority", "semantic"].flatMap(k => bar(DIM_LABEL[k], d.breakdown[k], WEIGHTS[k], notes[k])))),
 
     el("div", { class: "section" }, el("h4", {}, "Why it fits"), el("ul", { class: "tight pro" }, ...d.pros.map(p => el("li", {}, p)))),
     d.cons.length ? el("div", { class: "section" }, el("h4", {}, "Watch-outs"), el("ul", { class: "tight con" }, ...d.cons.map(p => el("li", {}, p)))) : null,
@@ -190,6 +194,7 @@ function wireSeg(id, key, multi) {
 let t;
 $("#q").addEventListener("input", e => { clearTimeout(t); t = setTimeout(() => { state.q = e.target.value.trim(); loadJobs(); }, 250); });
 $("#minsal").addEventListener("change", e => { state.minsal = e.target.value; loadJobs(); });
+$("#sponsor").addEventListener("change", e => { state.sponsor = e.target.value; loadJobs(); });
 $("#status").addEventListener("change", e => { state.status = e.target.value; loadJobs(); });
 $("#minscore").addEventListener("input", e => { state.minscore = +e.target.value; $("#minscore-val").textContent = e.target.value; clearTimeout(t); t = setTimeout(loadJobs, 150); });
 $("#refresh").addEventListener("click", async () => { const r = await api("/api/refresh", { method: "POST" }); setRefresh({ ...r, running: true }); });

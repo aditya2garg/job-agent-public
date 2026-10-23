@@ -44,10 +44,11 @@ def jobs(
     status: Optional[str] = None,
     q: Optional[str] = None,
     include_hidden: bool = False,
+    hide_no_sponsor: bool = False,
     limit: int = 300,
     offset: int = 0,
 ) -> dict[str, Any]:
-    rows, total = queries.ranked(min_score, tier, verdict, location, min_salary, status, q, include_hidden, limit, offset)
+    rows, total = queries.ranked(min_score, tier, verdict, location, min_salary, status, q, include_hidden, hide_no_sponsor, limit, offset)
     return {"total": total, "jobs": rows}
 
 

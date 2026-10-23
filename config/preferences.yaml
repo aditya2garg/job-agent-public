@@ -60,13 +60,13 @@ roles:
     score: 46
     focus_boost: 38        # up to +38 based on how data/AI-heavy the JD skills really are
     max_score: 78
-    pattern: 'data engineer|data platform engineer|analytics platform|data infrastructure|etl developer'
+    pattern: 'data engineer|business intelligence engineer|\bbie\b|data platform engineer|analytics platform|data infrastructure|etl developer'
   - name: Software Engineer
     tier: longshot
     score: 38
     focus_boost: 40
     max_score: 74
-    pattern: 'software engineer|software developer|backend engineer|back-end engineer|platform engineer|full[- ]?stack|member of technical staff|founding engineer|\bswe\b|python developer|python engineer'
+    pattern: 'software engineer|software development engineer|\bsde\b|software developer|backend engineer|back-end engineer|platform engineer|full[- ]?stack|member of technical staff|founding engineer|\bswe\b|python developer|python engineer'
 
 # Titles containing any of these are dropped before scoring.
 exclude_title_patterns:
@@ -107,12 +107,13 @@ seniority:
   default_score: 90
 
 weights:
-  role: 0.22
-  skills: 0.28
+  role: 0.20
+  skills: 0.26
   semantic: 0.07
-  seniority: 0.10
-  compensation: 0.18
-  location: 0.15
+  seniority: 0.08
+  compensation: 0.16
+  location: 0.13
+  sponsorship: 0.10
 
 verdicts:
   strong: 84    # "Apply now"
@@ -121,8 +122,24 @@ verdicts:
 
 # Pull-through filters applied during scrape (cheap, before any scoring).
 scrape:
-  max_age_days: 90
+  max_age_days: 7            # freshness window: only postings published within the last week
+  require_posted_date: true  # postings with no verifiable publish date are dropped
   require_us_eligible: true
+
+# Visa sponsorship (H-1B). Set needs_sponsorship: false to turn all of this off.
+sponsorship:
+  needs_sponsorship: true
+  # If the posting itself says "no sponsorship" the job is capped here (verdict becomes Skip).
+  cap_role_no: 30
+  # If the company says it across its postings (>= policy_share of >= policy_min postings) it is capped here.
+  cap_company_no: 35
+  policy_min_postings: 3
+  policy_share: 0.5
+  # No H-1B filings found in DOL data for this employer (and the posting doesn't say it sponsors).
+  cap_no_history: 68
+  # Tech-role certified H-1B LCAs (last ~9 months) needed to count as an established sponsor.
+  strong_history: 50
+  some_history: 10
 
 # LLM deep-analysis (optional). Needs ANTHROPIC_API_KEY or OPENAI_API_KEY in env.
 llm:

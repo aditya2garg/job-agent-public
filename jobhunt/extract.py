@@ -262,8 +262,52 @@ NEGATIVE_FLAGS: list[tuple[str, str, str]] = [
     ("onsite5", r"5 days (a|per) week (in|at) (the )?office|fully on-?site|in-?office five days|onsite 5 days", "On-site 5 days/week"),
     ("relocation", r"relocation (is )?required|must relocate", "Relocation required"),
     ("travel", r"(\d{2,3})% travel|travel up to (\d{2,3})%", "Significant travel"),
-    ("visa", r"(no|not) (able to )?(offer|provide|sponsor)[^.\n]{0,25}(visa|sponsorship)|without (the )?need for (visa )?sponsorship|unable to sponsor", "No visa sponsorship"),
 ]
+
+
+_SENT_SPLIT = re.compile(r"(?<=[.!?])\s+|\n+")
+_SPONSOR_WORD = re.compile(r"sponsor|citizen|work authori[sz]ation|visa|h-?1b|immigration", re.IGNORECASE)
+_NO_PATTERNS = [
+    re.compile(p, re.IGNORECASE)
+    for p in (
+        r"\b(?:not|n't|never|unable|cannot|can't|won't|no longer)\b[^.;]{0,50}\bsponsor",
+        r"\bno\s+(?:visa\s+|h-?1b\s+|immigration\s+|work\s+(?:visa\s+)?|employment\s+)?sponsorship",
+        r"\bsponsorship\b[^.;]{0,30}\b(?:not|unavailable|n't)\b",
+        r"\bwithout\s+(?:the\s+need\s+for\s+|requiring\s+|needing\s+|current\s+or\s+future\s+|now\s+or\s+in\s+the\s+future\s+)?(?:employer\s+|company\s+|visa\s+|immigration\s+|h-?1b\s+|any\s+|work\s+)*sponsorship",
+        r"\bu\.?s\.?\s+citizen(?:s|ship)?\s+(?:only|required|is required)\b",
+        r"\bmust\s+be\s+(?:a\s+)?(?:u\.?s\.?\s+)?(?:citizen|green\s*card)",
+        r"\bcitizens?\s+(?:and\s+(?:permanent\s+residents|green\s*card\s+holders)\s+)?only\b",
+    )
+]
+_YES_PATTERNS = [
+    re.compile(p, re.IGNORECASE)
+    for p in (
+        r"\b(?:will|can|able\s+to|happy\s+to|open\s+to|willing\s+to|do|does|may|would|also)\s+(?:also\s+|gladly\s+)?(?:consider\s+)?sponsor",
+        r"\boffers?\s+(?:visa\s+|h-?1b\s+|immigration\s+)?sponsorship",
+        r"\bsponsorship\s+(?:is\s+)?(?:available|provided|offered|supported)",
+        r"\b(?:visa|h-?1b|immigration|work\s+permit)\s+(?:sponsorship|support|assistance|transfers?)",
+        r"\bsponsors?\s+(?:work\s+)?(?:h-?1b\s+)?visas?",
+        r"\bwe\s+(?:also\s+|actively\s+|do\s+)?sponsor\b(?!\w)",
+    )
+]
+
+
+def sponsorship_stance(text: str) -> tuple[str, str]:
+    """What does the posting itself say about visa sponsorship? Returns (no | yes | unknown, evidence sentence).
+    Any explicit 'no' wins over a 'yes'; applicant questions ('Do you require sponsorship?') are ignored."""
+    if not text:
+        return "unknown", ""
+    yes_hit = ""
+    text = re.sub(r"\bU\.\s?S\.?(?=\W)", "US", text)
+    for sent in _SENT_SPLIT.split(text):
+        sent = sent.strip()
+        if not sent or sent.endswith("?") or not _SPONSOR_WORD.search(sent) or len(sent) > 600:
+            continue
+        if any(p.search(sent) for p in _NO_PATTERNS):
+            return "no", sent[:240]
+        if not yes_hit and any(p.search(sent) for p in _YES_PATTERNS):
+            yes_hit = sent[:240]
+    return ("yes", yes_hit) if yes_hit else ("unknown", "")
 
 
 def find_flags(text: str) -> list[tuple[str, str]]:

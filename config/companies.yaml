@@ -157,5 +157,20 @@ boards:
   - {ats: lever, token: arcadia, name: Arcadia}
   - {ats: ashby, token: eightsleep, name: Eight Sleep}
 
+# Big-tech / FAANG-level employers that don't use Greenhouse/Lever/Ashby. Each has a purpose-built fetcher
+# in jobhunt/sources/bigtech.py. Meta, Google and Uber have no usable public job API, so they are
+# pulled from LinkedIn's public guest search filtered to that company and the freshness window.
+bigtech:
+  - {kind: amazon, name: Amazon}
+  - {kind: eightfold, name: Microsoft, host: apply.careers.microsoft.com, domain: microsoft.com, pcsx: true}
+  - {kind: eightfold, name: Netflix, host: explore.jobs.netflix.net, domain: netflix.com}
+  - {kind: workday, name: NVIDIA, tenant: nvidia, wd: wd5, site: NVIDIAExternalCareerSite}
+  - {kind: workday, name: Salesforce, tenant: salesforce, wd: wd12, site: External_Career_Site}
+  - {kind: workday, name: Adobe, tenant: adobe, wd: wd5, site: external_experienced}
+  - {kind: linkedin, name: Meta, company_id: 10667}
+  - {kind: linkedin, name: Google, company_id: 1441}
+  - {kind: apple, name: Apple}
+  - {kind: linkedin, name: Uber, company_id: 1815218}
+
 # Free aggregator sources (no company list needed). Use `jobhunt scrape --sources ...` to restrict.
 aggregators: [remotive, remoteok, himalayas, hn]
