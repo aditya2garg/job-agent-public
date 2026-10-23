@@ -71,7 +71,7 @@ Each job also gets **resume talking points** (your own bullets mapped to the JD'
 
 ### Optional LLM deep review
 
-Set `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` (env or `.env`, see `.env.example`), then `jobhunt analyze`. For your top N heuristic matches it reads the full posting against your profile and returns a critical second opinion: fit score, "role reality check", gaps with mitigations, resume tweaks, interview prep. Results are cached per posting; the final score blends 60% heuristic / 40% LLM (LLM can raise a score by at most 12 points and never above a hard gate). Models are configurable in `preferences.yaml` or via `JOBHUNT_ANTHROPIC_MODEL` / `JOBHUNT_OPENAI_MODEL`. The HTTP wiring is unit-tested against a mock server; it has not been run against a live key in this repo.
+Set `GEMINI_API_KEY` (env or `.env`, see `.env.example`; free keys at https://aistudio.google.com/apikey; `GOOGLE_API_KEY` also works), then `jobhunt analyze`. For your top N heuristic matches it reads the full posting against your profile and returns a critical second opinion: fit score, "role reality check", gaps with mitigations, resume tweaks, interview prep. Results are cached per posting; the final score blends 60% heuristic / 40% LLM (LLM can raise a score by at most 12 points and never above a hard gate). The model defaults to `gemini-2.5-flash` and is configurable via `llm.gemini_model` in `preferences.yaml` or `JOBHUNT_GEMINI_MODEL`. The HTTP wiring is unit-tested against a mock server; it has not been run against a live key in this repo.
 
 ## Tuning it
 

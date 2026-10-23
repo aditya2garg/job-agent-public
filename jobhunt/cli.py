@@ -56,13 +56,13 @@ def analyze(
     top: Optional[int] = typer.Option(None, "--top", "-n", help="How many of the best heuristic matches to deep-review"),
     force: bool = typer.Option(False, help="Re-run even if cached"),
 ) -> None:
-    """LLM deep review of the best matches (needs ANTHROPIC_API_KEY or OPENAI_API_KEY)."""
+    """LLM deep review of the best matches (needs GEMINI_API_KEY)."""
     from .llm import analyze_top, provider
     from .pipeline import score_all
 
     prov = provider()
     if not prov:
-        console.print("[yellow]No ANTHROPIC_API_KEY / OPENAI_API_KEY in the environment; skipping LLM review.[/yellow]")
+        console.print("[yellow]No GEMINI_API_KEY in the environment; skipping LLM review.[/yellow]")
         raise typer.Exit(1)
     console.print(f"Using [bold]{prov[0]}:{prov[1]}[/bold]")
     with console.status("Reviewing top matches..."):

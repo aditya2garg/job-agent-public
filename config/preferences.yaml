@@ -141,10 +141,8 @@ sponsorship:
   strong_history: 50
   some_history: 10
 
-# LLM deep-analysis (optional). Needs ANTHROPIC_API_KEY or OPENAI_API_KEY in env.
+# LLM deep-analysis (optional). Uses Google Gemini; needs GEMINI_API_KEY in env or .env.
 llm:
-  provider: auto            # auto | anthropic | openai
-  anthropic_model: claude-sonnet-4-5
-  openai_model: gpt-4.1
+  gemini_model: gemini-2.5-flash   # or gemini-2.5-pro for deeper reviews
   top_n: 25                 # analyze the best N heuristic matches
   blend: 0.40               # final = (1-blend)*heuristic + blend*llm

@@ -164,7 +164,7 @@ function llmSection(L) {
   if (!L) {
     const avail = state.stats && state.stats.llm_available;
     return el("div", { class: "section" }, el("h4", {}, "LLM deep review"),
-      el("div", { class: "hint" }, avail ? "Not reviewed yet. Run `jobhunt analyze` to deep-review your top matches." : "Optional: set ANTHROPIC_API_KEY or OPENAI_API_KEY and run `jobhunt analyze` for a critical second opinion with gap mitigations and interview prep."));
+      el("div", { class: "hint" }, avail ? "Not reviewed yet. Run `jobhunt analyze` to deep-review your top matches." : "Optional: set GEMINI_API_KEY and run `jobhunt analyze` for a critical second opinion with gap mitigations and interview prep."));
   }
   const list = (arr, cls) => el("ul", { class: "tight " + (cls || "") }, ...arr.map(x => el("li", {}, x)));
   return el("div", { class: "section" }, el("h4", {}, `LLM deep review · ${L.model}`),

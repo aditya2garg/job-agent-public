@@ -38,14 +38,19 @@ SCHEMA_HINT = """{
 }"""
 
 
+GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
+
+
+def api_key() -> str | None:
+    return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or None
+
+
 def provider() -> tuple[str, str] | None:
+    """(provider, model) when a Gemini API key is configured, else None."""
+    if not api_key():
+        return None
     cfg = config.preferences().get("llm", {})
-    choice = cfg.get("provider", "auto")
-    if choice in ("auto", "anthropic") and os.environ.get("ANTHROPIC_API_KEY"):
-        return "anthropic", os.environ.get("JOBHUNT_ANTHROPIC_MODEL", cfg.get("anthropic_model", "claude-sonnet-4-5"))
-    if choice in ("auto", "openai") and os.environ.get("OPENAI_API_KEY"):
-        return "openai", os.environ.get("JOBHUNT_OPENAI_MODEL", cfg.get("openai_model", "gpt-4.1"))
-    return None
+    return "gemini", os.environ.get("JOBHUNT_GEMINI_MODEL", cfg.get("gemini_model", "gemini-2.5-flash"))
 
 
 def candidate_brief() -> str:
@@ -69,7 +74,8 @@ def build_prompt(job: dict[str, Any], heuristic: dict[str, Any]) -> str:
     summary = (
         f"Heuristic score {heuristic['heuristic']} ({heuristic['verdict']}); breakdown {heuristic['breakdown']}. "
         f"Matched: {', '.join(r['label'] for r in sk['matched'][:8])}. Gaps: {', '.join(r['label'] for r in sk['gaps'][:8])}. "
-        f"Pay: {d['salary'].get('note')}. Location: {d['location']['label']}."
+        f"Pay: {d['salary'].get('note')}. Location: {d['location']['label']}. "
+        f"Visa sponsorship (candidate needs H-1B): {d.get('sponsorship', {}).get('note', 'unknown')}."
     )
     return (
         f"{candidate_brief()}\n\n---\nJOB\nCompany: {job['company']}\nTitle: {job['title']}\nLocation: {job['location']}\n"
@@ -89,25 +95,27 @@ def _extract_json(text: str) -> dict[str, Any]:
 
 
 def call_model(client: httpx.Client, prov: tuple[str, str], prompt: str) -> dict[str, Any]:
-    name, model = prov
-    if name == "anthropic":
-        r = client.post(
-            os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com") + "/v1/messages",
-            headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01", "content-type": "application/json"},
-            json={"model": model, "max_tokens": 2000, "temperature": 0.2, "system": SYSTEM, "messages": [{"role": "user", "content": prompt}]},
-        )
-        r.raise_for_status()
-        return _extract_json("".join(b.get("text", "") for b in r.json()["content"]))
+    _, model = prov
+    key = api_key()
+    if not key:
+        raise RuntimeError("GEMINI_API_KEY is not set")
     r = client.post(
-        os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1") + "/chat/completions",
-        headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"},
+        f"{os.environ.get('GEMINI_BASE_URL', GEMINI_BASE)}/models/{model}:generateContent",
+        headers={"x-goog-api-key": key, "content-type": "application/json"},
         json={
-            "model": model, "temperature": 0.2, "response_format": {"type": "json_object"},
-            "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}],
+            "systemInstruction": {"parts": [{"text": SYSTEM}]},
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            # Gemini 2.5 models spend part of this budget on internal reasoning, so keep it generous.
+            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 8192, "responseMimeType": "application/json"},
         },
     )
     r.raise_for_status()
-    return _extract_json(r.json()["choices"][0]["message"]["content"])
+    data = r.json()
+    cands = data.get("candidates") or []
+    if not cands:
+        raise ValueError(f"Gemini returned no candidates ({data.get('promptFeedback') or 'empty response'})")
+    parts = (cands[0].get("content") or {}).get("parts") or []
+    return _extract_json("".join(p.get("text", "") for p in parts if not p.get("thought")))
 
 
 def _normalize(a: dict[str, Any]) -> dict[str, Any]:
@@ -124,7 +132,7 @@ def _normalize(a: dict[str, Any]) -> dict[str, Any]:
 def analyze_top(top_n: int | None = None, force: bool = False, progress=None, workers: int = 4) -> dict[str, int]:
     prov = provider()
     if not prov:
-        raise RuntimeError("No LLM key found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY (see README).")
+        raise RuntimeError("No Gemini key found. Set GEMINI_API_KEY (get one at https://aistudio.google.com/apikey).")
     cfg = config.preferences().get("llm", {})
     top_n = top_n or int(cfg.get("top_n", 25))
     todo: list[tuple[dict[str, Any], dict[str, Any], str]] = []
@@ -149,7 +157,7 @@ def analyze_top(top_n: int | None = None, force: bool = False, progress=None, wo
                 break
 
     done = failed = 0
-    client = httpx.Client(timeout=120)
+    client = httpx.Client(timeout=180)
 
     def work(item: tuple[dict[str, Any], dict[str, Any], str]):
         job, heur, h = item

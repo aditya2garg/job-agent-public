@@ -22,38 +22,39 @@ def test_normalize_coerces_shapes():
     assert llm._normalize({"fit_score": "abc"})["fit_score"] is None
 
 
-def test_anthropic_call_shape(monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+def test_gemini_call_shape(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "k")
     seen = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
-        seen["url"] = str(request.url)
-        seen["key"] = request.headers["x-api-key"]
+        seen["path"] = request.url.path
+        seen["key"] = request.headers["x-goog-api-key"]
         body = json.loads(request.content)
-        seen["model"] = body["model"]
-        return httpx.Response(200, json={"content": [{"type": "text", "text": '{"fit_score": 81}'}]})
+        seen["json_mode"] = body["generationConfig"]["responseMimeType"]
+        seen["system"] = body["systemInstruction"]["parts"][0]["text"]
+        parts = [{"text": "thinking...", "thought": True}, {"text": '{"fit_score": 81}'}]
+        return httpx.Response(200, json={"candidates": [{"content": {"parts": parts}}]})
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
-    out = llm.call_model(client, ("anthropic", "m1"), "hi")
-    assert out["fit_score"] == 81 and seen["url"].endswith("/v1/messages") and seen["key"] == "k" and seen["model"] == "m1"
+    out = llm.call_model(client, ("gemini", "gemini-x"), "hi")
+    assert out["fit_score"] == 81
+    assert seen["path"].endswith("/models/gemini-x:generateContent") and seen["key"] == "k"
+    assert seen["json_mode"] == "application/json" and "recruiter" in seen["system"]
 
 
-def test_openai_call_shape(monkeypatch):
-    monkeypatch.setenv("OPENAI_API_KEY", "k")
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.path.endswith("/chat/completions")
-        return httpx.Response(200, json={"choices": [{"message": {"content": '{"fit_score": 64}'}}]})
-
-    client = httpx.Client(transport=httpx.MockTransport(handler))
-    assert llm.call_model(client, ("openai", "m"), "hi")["fit_score"] == 64
+def test_gemini_empty_response_raises(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "k")
+    client = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(200, json={"promptFeedback": {"blockReason": "SAFETY"}})))
+    with pytest.raises(ValueError, match="no candidates"):
+        llm.call_model(client, ("gemini", "m"), "hi")
 
 
 def test_provider_detection(monkeypatch):
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     assert llm.provider() is None
-    monkeypatch.setenv("OPENAI_API_KEY", "x")
-    assert llm.provider()[0] == "openai"
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
-    assert llm.provider()[0] == "anthropic"
+    monkeypatch.setenv("GOOGLE_API_KEY", "x")
+    assert llm.provider()[0] == "gemini"
+    monkeypatch.setenv("GEMINI_API_KEY", "y")
+    monkeypatch.setenv("JOBHUNT_GEMINI_MODEL", "gemini-2.5-pro")
+    assert llm.provider() == ("gemini", "gemini-2.5-pro")
