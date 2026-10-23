@@ -18,7 +18,9 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
+import os
 import re
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from typing import Any
 
@@ -94,7 +96,7 @@ def score_skills(job: Job, hits: dict, ctx: Context) -> tuple[float, dict[str, A
             {"id": sid, "label": sk.label, "category": sk.category, "weight": round(w, 2), "proficiency": p,
              "section": hit.section, "in_title": hit.in_title, "mentions": hit.mentions}
         )
-    prior = 3.0
+    prior = 3.0 + max(0, 8 - len(rows)) * 0.8  # thin postings carry less evidence
     base = 100 * (num + prior * 0.5) / (den + prior)
 
     critical = [r for r in rows if r["section"] == "required" and r["weight"] >= 2.5 and r["proficiency"] < 0.2 and r["category"] != "data"]
@@ -261,6 +263,8 @@ def _headline(dims: dict[str, float], d: dict[str, Any]) -> tuple[list[str], lis
         pos.append(d["location"]["label"])
     else:
         neg.append(f"Location: {d['location']['label']}")
+    if d["skills"]["n_skills"] < 5:
+        neg.append("Thin job description: score is low-confidence")
     for _, msg in d["flags"]:
         neg.append(msg)
     return pos, neg
@@ -362,12 +366,29 @@ def semantic_scores(jobs: list[Job], resume: str) -> list[float]:
     return [float(round(p, 1)) for p in pct]
 
 
+def _analyze_chunk(jobs: list[Job]) -> list[dict[str, Any]]:
+    ctx = Context.load()
+    return [analyze(j, ctx) for j in jobs]
+
+
+def _analyze_many(jobs: list[Job]) -> list[dict[str, Any]]:
+    """Skill regexes dominate runtime; fan out across cores for big batches."""
+    workers = min(os.cpu_count() or 1, 8)
+    if len(jobs) < 200 or workers < 2:
+        return _analyze_chunk(jobs)
+    size = -(-len(jobs) // (workers * 4))
+    chunks = [jobs[i : i + size] for i in range(0, len(jobs), size)]
+    with ProcessPoolExecutor(max_workers=workers) as pool:
+        return [a for part in pool.map(_analyze_chunk, chunks) for a in part]
+
+
 def score_jobs(jobs: list[Job]) -> list[dict[str, Any]]:
     ctx = Context.load()
+    analyses = _analyze_many(jobs)
     sem = semantic_scores(jobs, config.resume_text())
     out = []
-    for job, s in zip(jobs, sem):
-        res = combine(analyze(job, ctx), s, ctx)
+    for job, analysis, s in zip(jobs, analyses, sem):
+        res = combine(analysis, s, ctx)
         res["job_id"] = job.id
         out.append(res)
     return out

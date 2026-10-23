@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import bisect
 import html
 import re
 from dataclasses import dataclass, field
@@ -255,7 +256,7 @@ def years_required(text: str) -> tuple[float | None, str]:
 
 NEGATIVE_FLAGS: list[tuple[str, str, str]] = [
     ("clearance", r"security clearance|ts/sci|top secret|secret clearance|active clearance|dod clearance", "Requires a US security clearance"),
-    ("citizenship", r"u\.?s\.? citizen(ship)? (is )?required|must be a u\.?s\.? citizen|citizens? only|itar", "US citizenship required"),
+    ("citizenship", r"u\.?s\.? citizen(ship)? (is )?required|must be a u\.?s\.? citizen|citizens? only|\bitar\b", "US citizenship required"),
     ("phd", r"\bph\.?d\.?\b (required|is required|in (computer|machine|statistics|physics|ai))|doctorate (required|in)|requires a ph\.?d", "PhD required or strongly preferred"),
     ("contract", r"\bcontract(or)?\b (position|role|basis)|\b(6|12|3)[- ]month contract|\bC2C\b|corp[- ]to[- ]corp|1099|staffing|\bw2 contract", "Contract / staffing arrangement"),
     ("onsite5", r"5 days (a|per) week (in|at) (the )?office|fully on-?site|in-?office five days|onsite 5 days", "On-site 5 days/week"),
@@ -304,11 +305,15 @@ class SkillHit:
     section: str
 
 
-def _sections(text: str) -> list[tuple[str, str]]:
-    """Walk the text line by line, tracking whether we're in requirements / nice-to-have / etc."""
+def _sections(text: str) -> list[tuple[int, str]]:
+    """Walk the text line by line, tracking whether we're in requirements / nice-to-have / etc.
+    Returns (start_offset, mode) pairs, one per non-empty line."""
     mode = "general"
-    out: list[tuple[str, str]] = []
+    out: list[tuple[int, str]] = []
+    pos = 0
     for line in text.split("\n"):
+        start = pos
+        pos += len(line) + 1
         s = line.strip()
         if not s:
             continue
@@ -322,28 +327,29 @@ def _sections(text: str) -> list[tuple[str, str]]:
                 mode = "required"
             elif _RESP_HDR.search(s):
                 mode = "general"
-            out.append((mode, s))
+            out.append((start, mode))
             continue
         line_mode = mode
-        if _NICE_HDR.search(s) and len(s) < 220:
+        if len(s) < 220 and _NICE_HDR.search(s):
             line_mode = "nice"
-        out.append((line_mode, s))
+        out.append((start, line_mode))
     return out
 
 
 def extract_skills(title: str, text: str) -> dict[str, SkillHit]:
     hits: dict[str, SkillHit] = {}
-    sections = _sections(text or "")
+    text = text or ""
+    sections = _sections(text)
+    starts = [st for st, _ in sections]
     for skill in SKILLS:
         in_title = bool(skill.pattern.search(title or ""))
         count, best_mult, best_section = 0, 0.0, "general"
-        for mode, line in sections:
-            n = len(skill.pattern.findall(line))
-            if n:
-                count += n
-                mult = SECTION_MULT[mode]
-                if mult > best_mult:
-                    best_mult, best_section = mult, mode
+        for m in skill.pattern.finditer(text):
+            count += 1
+            mode = sections[max(0, bisect.bisect_right(starts, m.start()) - 1)][1] if sections else "general"
+            mult = SECTION_MULT[mode]
+            if mult > best_mult:
+                best_mult, best_section = mult, mode
         if count or in_title:
             if in_title:
                 best_mult, best_section = max(best_mult, 1.5), "required"

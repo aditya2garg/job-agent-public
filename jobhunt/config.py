@@ -13,6 +13,20 @@ DATA_DIR = ROOT / "data"
 DB_PATH = Path(os.environ.get("JOBHUNT_DB", DATA_DIR / "jobs.db"))
 
 
+def _load_dotenv() -> None:
+    env = ROOT / ".env"
+    if not env.exists():
+        return
+    for line in env.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+
+
+_load_dotenv()
+
+
 def _load(name: str) -> dict[str, Any]:
     with open(CONFIG_DIR / name, encoding="utf-8") as fh:
         return yaml.safe_load(fh) or {}

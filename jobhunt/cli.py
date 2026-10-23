@@ -102,11 +102,11 @@ def top(
 
     rows, total = ranked(min_score=min_score, tier=tier, location_kind=location, include_hidden=all_, limit=n)
     t = Table(title=f"Top {len(rows)} of {total} scored postings", show_lines=False)
-    for col in ("id", "score", "verdict", "company", "title", "where", "pay", "role"):
+    for col in ("id", "score", "verdict", "company", "title", "where", "pay"):
         t.add_column(col, overflow="fold", no_wrap=col in ("id", "score"))
     for r in rows:
         pay = f"${r['salary_low'] / 1000:.0f}-{r['salary_high'] / 1000:.0f}k" if r["salary_known"] else "?"
-        t.add_row(r["id"], f"{r['score']:.0f}", f"[{VERDICT_STYLE[r['verdict']]}]{r['verdict']}[/]", r["company"], r["title"], r["location_label"], pay, f"{r['role_name']} ({r['role_tier']})")
+        t.add_row(r["id"], f"{r['score']:.0f}", f"[{VERDICT_STYLE[r['verdict']]}]{r['verdict']}[/]", r["company"], r["title"], r["location_label"], pay)
     console.print(t)
     console.print("Details: [bold]jobhunt show <id>[/bold]   Dashboard: [bold]jobhunt serve[/bold]")
 
@@ -132,7 +132,7 @@ def mark(job_id: str, status: str, notes: Optional[str] = None) -> None:
 def export(
     fmt: str = typer.Option("md", "--format", "-f", help="md | csv"),
     out: Optional[Path] = typer.Option(None, "--out", "-o"),
-    n: int = typer.Option(100, "--n"),
+    n: int = typer.Option(100, "--n", "-n"),
     min_score: float = typer.Option(60, "--min-score"),
 ) -> None:
     """Write the ranked list to Markdown or CSV."""

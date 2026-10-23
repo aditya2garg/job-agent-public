@@ -89,7 +89,7 @@ exclude_title_patterns:
 # Titles that still pass the filter but are probably not what you want. Applied to the role score.
 soft_penalties:
   - {pattern: 'gtm|go-to-market', penalty: 12, label: 'GTM / go-to-market focused'}
-  - {pattern: 'security|red team|trust', penalty: 18, label: 'Security-domain role'}
+  - {pattern: 'security|red team|trust', penalty: 28, label: 'Security-domain role'}
   - {pattern: 'applied ai architect|ai architect|customer|field|consult', penalty: 15, label: 'Customer-facing / consulting flavor'}
   - {pattern: 'infrastructure|infra\b|systems? engineer|\bsre\b|reliability|devops|performance', penalty: 14, label: 'Infra-heavy role'}
   - {pattern: 'support|operations|\bops\b', penalty: 14, label: 'Operations / support flavor'}
